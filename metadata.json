@@ -1,0 +1,6 @@
+{
+  "name": "MARE",
+  "description": "MARE is an AI-powered personalized fashion and skincare assistant featuring custom styling advice, local weather integrations, and dynamic skincare routines.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
