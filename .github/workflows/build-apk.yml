@@ -27,8 +27,14 @@ jobs:
         mkdir -p app/My-app
         keytool -genkey -v -keystore app/My-app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
-    - name: Build Debug APK
-      run: gradle assembleDebug --stacktrace
+    - name: Build Debug APK              
+      run: |
+        gradle assembleDebug --stacktrace > build_log.txt 2>&1 || true
+        cat build_log.txt | grep -E -A 5 -B 2 "FAILED|Exception|Error|not found" || true
+        echo "=== FULL ERROR SUMMARY BELOW ==="
+        tail -n 40 build_log.txt
+        exit $(cat build_log.txt | grep -q "BUILD SUCCESSFUL" && echo 0 || echo 1)
+
 
 
     - name: Upload APK
