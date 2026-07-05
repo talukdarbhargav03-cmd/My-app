@@ -4,6 +4,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -103,6 +106,7 @@ fun CollectionTab(
     val userProfile by viewModel.userProfile.collectAsState()
     val weatherState by viewModel.weather.collectAsState()
 
+    var activeSubTab by remember { mutableStateOf("Catalog") } // "Catalog" or "Lookbook"
     var searchQuery by remember { mutableStateOf("") }
     var selectedSort by remember { mutableStateOf("Popularity") } // "Popularity", "Low-High", "High-Low"
     var selectedCollection by remember { mutableStateOf("All") }
@@ -231,7 +235,7 @@ fun CollectionTab(
 
         // Title Header
         Text(
-            text = "Collection/Products",
+            text = if (activeSubTab == "Catalog") "Collection & Catalog" else "AI Mix-and-Match Lookbook",
             fontSize = 24.sp,
             fontWeight = FontWeight.Light,
             fontFamily = FontFamily.Serif,
@@ -239,11 +243,65 @@ fun CollectionTab(
             modifier = Modifier.fillMaxWidth()
         )
         Text(
-            text = "Infinite search index cross-comparing personalized items.",
+            text = if (activeSubTab == "Catalog") "Infinite search index cross-comparing personalized items." else "Design beautiful styling ensembles using your digital wardrobe.",
             fontSize = 12.sp,
             color = secondaryTextColor,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = 4.dp)
         )
+
+        // SubTab Selection Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { activeSubTab = "Catalog" },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (activeSubTab == "Catalog") {
+                        if (isDark) Color(0xFF202D29) else Color(0xFFE2EBE6)
+                    } else {
+                        if (isDark) Color(0xFF2D3135) else Color(0xFFFFFFFF)
+                    },
+                    contentColor = if (activeSubTab == "Catalog") {
+                        if (isDark) Color(0xFFA8D1C2) else Color(0xFF202D29)
+                    } else {
+                        if (isDark) Color(0xFFC4C7C5) else Color(0xFF5A6E6E)
+                    }
+                ),
+                shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, cardBorderColor)
+            ) {
+                Icon(imageVector = Icons.Default.ShoppingBag, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(text = "Luxury Catalog", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            }
+
+            Button(
+                onClick = { activeSubTab = "Lookbook" },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (activeSubTab == "Lookbook") {
+                        if (isDark) Color(0xFF202D29) else Color(0xFFE2EBE6)
+                    } else {
+                        if (isDark) Color(0xFF2D3135) else Color(0xFFFFFFFF)
+                    },
+                    contentColor = if (activeSubTab == "Lookbook") {
+                        if (isDark) Color(0xFFA8D1C2) else Color(0xFF202D29)
+                    } else {
+                        if (isDark) Color(0xFFC4C7C5) else Color(0xFF5A6E6E)
+                    }
+                ),
+                shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, cardBorderColor)
+            ) {
+                Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(text = "AI Lookbook Studio", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+
+        if (activeSubTab == "Catalog") {
 
         // Search Field
         OutlinedTextField(
@@ -455,6 +513,16 @@ fun CollectionTab(
                     )
                 }
             }
+        }
+        } else {
+            AiLookbookStudioView(
+                viewModel = viewModel,
+                isDark = isDark,
+                cardBgColor = cardBgColor,
+                cardBorderColor = cardBorderColor,
+                primaryTextColor = primaryTextColor,
+                secondaryTextColor = secondaryTextColor
+            )
         }
     }
 }
@@ -781,5 +849,512 @@ fun SortChip(
                 if (isDark) Color(0xFFC4C7C5) else Color(0xFF5A6E6E)
             }
         )
+    }
+}
+
+@Composable
+fun AiLookbookStudioView(
+    viewModel: MareViewModel,
+    isDark: Boolean,
+    cardBgColor: Color,
+    cardBorderColor: Color,
+    primaryTextColor: Color,
+    secondaryTextColor: Color
+) {
+    val closetItems by viewModel.closetItems.collectAsState()
+    val savedOutfits by viewModel.savedOutfits.collectAsState()
+    val isAnalyzing by viewModel.isOutfitAnalyzing.collectAsState()
+    val analysisResult by viewModel.outfitAnalysisResult.collectAsState()
+    val analysisScore by viewModel.outfitAnalysisScore.collectAsState()
+
+    val selectedItems = remember { mutableStateListOf<com.example.data.ClosetItemEntity>() }
+    var lookbookTitle by remember { mutableStateOf("") }
+    val scrollState = androidx.compose.foundation.rememberScrollState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(bottom = 120.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Studio Intro Card
+        Card(
+            modifier = Modifier.fillMaxWidth().fadeInUpOnMount(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = cardBgColor),
+            border = BorderStroke(1.dp, cardBorderColor)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = if (isDark) Color(0xFFA8D1C2) else Color(0xFF2C4E41),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "AI MIX-AND-MATCH DESIGNER",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color(0xFFA8D1C2) else Color(0xFF202D29),
+                        letterSpacing = 1.sp
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Combine elements from your digital wardrobe. Our luxury styling intelligence analyzes textural play, silhouette harmony, color balance, and real-time weather suitability.",
+                    fontSize = 12.sp,
+                    color = secondaryTextColor,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+
+        // Closet Selector Section
+        Text(
+            text = "Select Wardrobe Pieces",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = FontFamily.Serif,
+            color = primaryTextColor
+        )
+
+        if (closetItems.isEmpty()) {
+            // Empty State - seed wardrobe basics button
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = cardBgColor.copy(alpha = 0.5f)),
+                border = BorderStroke(1.dp, cardBorderColor)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Inventory,
+                        contentDescription = "Empty Closet",
+                        tint = secondaryTextColor.copy(alpha = 0.4f),
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Your digital closet is currently empty",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = primaryTextColor
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Seed your closet with timeless luxury capsule items to start creating drapes.",
+                        fontSize = 11.sp,
+                        color = secondaryTextColor,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = {
+                            viewModel.addClosetItem("Charcoal Wool Blazer", "Outerwear", "Charcoal", "Virgin Wool", "Unstructured elegant fit")
+                            viewModel.addClosetItem("Cream Silk Blouse", "Tops", "Cream", "Mulberry Silk", "Fluid flow drape")
+                            viewModel.addClosetItem("Relaxed Linen Trouser", "Bottoms", "Sand", "Organic Linen", "Wide-leg tailored cut")
+                            viewModel.addClosetItem("Minimalist Leather Loafer", "Shoes", "Espresso", "Calfskin Leather", "Ultra-soft construction")
+                            viewModel.addClosetItem("Gold Signet Ring", "Accessories", "Gold", "18k Solid Gold", "Geometric structural face")
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isDark) Color(0xFF2E3D36) else Color(0xFFE2ECE9),
+                            contentColor = if (isDark) Color(0xFFA8D1C2) else Color(0xFF1E352F)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Seed Luxury Capsule Basics", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        } else {
+            // Grid of closet items
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                closetItems.forEach { item ->
+                    val isSelected = selectedItems.any { it.id == item.id }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (isSelected) {
+                                    selectedItems.removeAll { it.id == item.id }
+                                } else {
+                                    if (selectedItems.size < 5) {
+                                        selectedItems.add(item)
+                                    }
+                                }
+                            }
+                            .border(
+                                width = 1.dp,
+                                color = if (isSelected) {
+                                    if (isDark) Color(0xFF2C4E41) else Color(0xFFB4D2CB)
+                                } else {
+                                    cardBorderColor.copy(alpha = 0.5f)
+                                },
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .background(
+                                if (isSelected) {
+                                    if (isDark) Color(0xFF1C2724) else Color(0xFFF3FAF8)
+                                } else {
+                                    cardBgColor
+                                },
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = if (isSelected) {
+                                    if (isDark) Color(0xFFA8D1C2) else Color(0xFF2C4E41)
+                                } else {
+                                    secondaryTextColor.copy(alpha = 0.5f)
+                                },
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = item.name,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = primaryTextColor
+                                )
+                                Text(
+                                    text = "${item.category} • ${item.color} • ${item.material}",
+                                    fontSize = 10.sp,
+                                    color = secondaryTextColor
+                                )
+                            }
+                        }
+                        
+                        // Category pill
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    if (isDark) Color(0xFF2A2E32) else Color(0xFFF1F3F5),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = item.category,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = secondaryTextColor
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Selection Draft Board
+        if (selectedItems.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = cardBgColor),
+                border = BorderStroke(1.dp, cardBorderColor)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "ACTIVE LOOK COMBINATION",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = secondaryTextColor,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Dotted divider or Row of cards
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        selectedItems.forEach { item ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .border(1.dp, cardBorderColor, RoundedCornerShape(10.dp))
+                                    .background(
+                                        if (isDark) Color(0xFF212529) else Color(0xFFFAFAFA),
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    .clickable { selectedItems.remove(item) }
+                                    .padding(8.dp)
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = when (item.category.lowercase()) {
+                                            "outerwear" -> Icons.Default.DryCleaning
+                                            "tops" -> Icons.Default.Checkroom
+                                            "bottoms" -> Icons.Default.Checkroom
+                                            "shoes" -> Icons.Default.Checkroom
+                                            else -> Icons.Default.Palette
+                                        },
+                                        contentDescription = null,
+                                        tint = if (isDark) Color(0xFFA8D1C2) else Color(0xFF2C4E41),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = item.name,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = primaryTextColor,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (isAnalyzing) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = if (isDark) Color(0xFFA8D1C2) else Color(0xFF2C4E41),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Cross-analyzing styling layers...",
+                                fontSize = 12.sp,
+                                color = secondaryTextColor
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = { viewModel.analyzeOutfitCompatibility(selectedItems) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isDark) Color(0xFFA8D1C2) else Color(0xFF202D29),
+                                contentColor = if (isDark) Color(0xFF202D29) else Color(0xFFFFFFFF)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Analyze Styling Harmony", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Analysis Results Card
+        if (analysisScore != null && analysisResult != null) {
+            val score = analysisScore ?: 80
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = cardBgColor),
+                border = BorderStroke(2.dp, if (score >= 90) Color(0xFFD4AF37) else cardBorderColor)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "STYLE INTELLIGENCE DIALOGUE",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFC48E5A),
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = "Compatibility Verdict",
+                                fontSize = 16.sp,
+                                fontFamily = FontFamily.Serif,
+                                color = primaryTextColor
+                            )
+                        }
+                        
+                        // Compatibility Rating Circle
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    if (score >= 90) Color(0xFFFFFBEB) else Color(0xFFF0FDF4),
+                                    shape = CircleShape
+                                )
+                                .border(1.dp, if (score >= 90) Color(0xFFFBBF24) else Color(0xFF34D399), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "$score%",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (score >= 90) Color(0xFFB45309) else Color(0xFF047857)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = analysisResult ?: "",
+                        fontSize = 12.sp,
+                        color = secondaryTextColor,
+                        lineHeight = 18.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider(color = cardBorderColor.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Save this look to Lookbook",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = primaryTextColor
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = lookbookTitle,
+                            onValueChange = { lookbookTitle = it },
+                            placeholder = { Text("E.g. Linen Spring Mix", fontSize = 11.sp) },
+                            modifier = Modifier.weight(1f),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = if (isDark) Color(0xFFA8D1C2) else Color(0xFF202D29),
+                                unfocusedBorderColor = cardBorderColor
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+
+                        Button(
+                            onClick = {
+                                if (lookbookTitle.isBlank()) {
+                                    lookbookTitle = "Curated Mix"
+                                }
+                                val names = selectedItems.joinToString(", ") { it.name }
+                                val ids = selectedItems.map { it.id }
+                                viewModel.saveOutfitMix(lookbookTitle, ids, names, score, analysisResult ?: "")
+                                lookbookTitle = ""
+                                selectedItems.clear()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isDark) Color(0xFF2E3D36) else Color(0xFFE2ECE9),
+                                contentColor = if (isDark) Color(0xFFA8D1C2) else Color(0xFF1E352F)
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Save", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Saved Lookbooks History
+        if (savedOutfits.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "My Curated Lookbooks",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Serif,
+                color = primaryTextColor
+            )
+
+            savedOutfits.forEach { outfit ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = cardBgColor),
+                    border = BorderStroke(1.dp, cardBorderColor)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = outfit.title,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryTextColor
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = outfit.itemNames,
+                                    fontSize = 10.sp,
+                                    color = secondaryTextColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Score badge
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            if (outfit.compatibilityScore >= 90) Color(0xFFFFFBEB) else Color(0xFFF0FDF4),
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = "${outfit.compatibilityScore}%",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (outfit.compatibilityScore >= 90) Color(0xFFB45309) else Color(0xFF047857)
+                                    )
+                                }
+                                
+                                IconButton(onClick = { viewModel.deleteSavedOutfit(outfit) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = secondaryTextColor.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = outfit.stylingVerdict,
+                            fontSize = 11.sp,
+                            color = secondaryTextColor,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+            }
+        }
     }
 }

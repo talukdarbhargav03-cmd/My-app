@@ -14,6 +14,10 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +38,7 @@ fun SavedTab(
     val isDark by viewModel.isThemeDark.collectAsState()
     val savedArticles by viewModel.savedArticles.collectAsState()
     val savedProducts by viewModel.savedProducts.collectAsState()
+    val savedOutfits by viewModel.savedOutfits.collectAsState()
     val userProfile by viewModel.userProfile.collectAsState()
     val weatherState by viewModel.weather.collectAsState()
 
@@ -69,7 +74,7 @@ fun SavedTab(
     val cardBgColor = MaterialTheme.colorScheme.surface
     val cardBorderColor = MaterialTheme.colorScheme.outlineVariant
 
-    var activeSubTab by remember { mutableStateOf("Articles") } // "Articles" or "Products"
+    var activeSubTab by remember { mutableStateOf("Articles") } // "Articles", "Products", or "Lookbooks"
 
     Column(
         modifier = modifier
@@ -100,74 +105,176 @@ fun SavedTab(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SubTabSelectionChip(
-                text = "Articles (${savedArticles.size})",
-                isSelected = activeSubTab == "Articles",
-                icon = Icons.Default.MenuBook,
-                isDark = isDark
-            ) {
-                activeSubTab = "Articles"
+            Box(modifier = Modifier.weight(1f)) {
+                SubTabSelectionChip(
+                    text = "Articles (${savedArticles.size})",
+                    isSelected = activeSubTab == "Articles",
+                    icon = Icons.Default.MenuBook,
+                    isDark = isDark
+                ) {
+                    activeSubTab = "Articles"
+                }
             }
 
-            SubTabSelectionChip(
-                text = "Products (${savedProducts.size})",
-                isSelected = activeSubTab == "Products",
-                icon = Icons.Default.GridView,
-                isDark = isDark
-            ) {
-                activeSubTab = "Products"
+            Box(modifier = Modifier.weight(1f)) {
+                SubTabSelectionChip(
+                    text = "Products (${savedProducts.size})",
+                    isSelected = activeSubTab == "Products",
+                    icon = Icons.Default.GridView,
+                    isDark = isDark
+                ) {
+                    activeSubTab = "Products"
+                }
+            }
+
+            Box(modifier = Modifier.weight(1f)) {
+                SubTabSelectionChip(
+                    text = "Lookbooks (${savedOutfits.size})",
+                    isSelected = activeSubTab == "Lookbooks",
+                    icon = Icons.Default.AutoAwesome,
+                    isDark = isDark
+                ) {
+                    activeSubTab = "Lookbooks"
+                }
             }
         }
 
         // Contents
-        if (activeSubTab == "Articles") {
-            if (savedArticles.isEmpty()) {
-                EmptySavedState("No saved articles found. Save styling writeups inside Articles tab.", secondaryTextColor)
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 100.dp)
-                ) {
-                    items(savedArticles) { article ->
-                        ArticleFeedCard(
-                            article = article,
-                            isSaved = true,
-                            cardBg = cardBgColor,
-                            borderColor = cardBorderColor,
-                            primaryText = primaryTextColor,
-                            secondaryText = secondaryTextColor,
-                            onBookmarkClick = { viewModel.toggleArticleBookmark(article) }
-                        )
+        when (activeSubTab) {
+            "Articles" -> {
+                if (savedArticles.isEmpty()) {
+                    EmptySavedState("No saved articles found. Save styling writeups inside Articles tab.", secondaryTextColor)
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
+                        items(savedArticles) { article ->
+                            ArticleFeedCard(
+                                article = article,
+                                isSaved = true,
+                                cardBg = cardBgColor,
+                                borderColor = cardBorderColor,
+                                primaryText = primaryTextColor,
+                                secondaryText = secondaryTextColor,
+                                onBookmarkClick = { viewModel.toggleArticleBookmark(article) }
+                            )
+                        }
                     }
                 }
             }
-        } else {
-            if (savedProducts.isEmpty()) {
-                EmptySavedState("No saved products found. Save luxury products inside Collection tab.", secondaryTextColor)
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 100.dp)
-                ) {
-                    items(savedProducts) { product ->
-                        ProductGridCard(
-                            product = product,
-                            isSaved = true,
-                            cardBg = cardBgColor,
-                            borderColor = cardBorderColor,
-                            primaryText = primaryTextColor,
-                            secondaryText = secondaryTextColor,
-                            currencyConfig = currencyConfig,
-                            resolvedLocationName = resolvedLocationName,
-                            resolvedCountryName = resolvedCountryName,
-                            onBookmarkClick = { viewModel.toggleProductBookmark(product) }
-                        )
+            "Products" -> {
+                if (savedProducts.isEmpty()) {
+                    EmptySavedState("No saved products found. Save luxury products inside Collection tab.", secondaryTextColor)
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
+                        items(savedProducts) { product ->
+                            ProductGridCard(
+                                product = product,
+                                isSaved = true,
+                                cardBg = cardBgColor,
+                                borderColor = cardBorderColor,
+                                primaryText = primaryTextColor,
+                                secondaryText = secondaryTextColor,
+                                currencyConfig = currencyConfig,
+                                resolvedLocationName = resolvedLocationName,
+                                resolvedCountryName = resolvedCountryName,
+                                onBookmarkClick = { viewModel.toggleProductBookmark(product) }
+                            )
+                        }
+                    }
+                }
+            }
+            "Lookbooks" -> {
+                if (savedOutfits.isEmpty()) {
+                    EmptySavedState("No saved outfits found. Create and save dynamic look combinations inside Collection tab under 'AI Lookbook Studio'.", secondaryTextColor)
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
+                        items(savedOutfits) { outfit ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = cardBgColor),
+                                border = BorderStroke(1.dp, cardBorderColor)
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = outfit.title,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = primaryTextColor
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = outfit.itemNames,
+                                                fontSize = 10.sp,
+                                                color = secondaryTextColor,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                        
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            // Score badge
+                                            Box(
+                                                modifier = Modifier
+                                                    .background(
+                                                        if (outfit.compatibilityScore >= 90) Color(0xFFFFFBEB) else Color(0xFFF0FDF4),
+                                                        shape = RoundedCornerShape(8.dp)
+                                                    )
+                                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "${outfit.compatibilityScore}%",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (outfit.compatibilityScore >= 90) Color(0xFFB45309) else Color(0xFF047857)
+                                                )
+                                            }
+                                            
+                                            IconButton(onClick = { viewModel.deleteSavedOutfit(outfit) }) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = "Delete",
+                                                    tint = secondaryTextColor.copy(alpha = 0.6f),
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = outfit.stylingVerdict,
+                                        fontSize = 11.sp,
+                                        color = secondaryTextColor,
+                                        lineHeight = 15.sp
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -197,11 +304,19 @@ fun SubTabSelectionChip(
                 if (isDark) Color(0xFFC4C7C5) else Color(0xFF5A6E6E)
             }
         ),
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(24.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(text = text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(13.dp))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = text,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

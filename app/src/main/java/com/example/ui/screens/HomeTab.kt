@@ -95,6 +95,17 @@ fun HomeTab(
             secondaryText = secondaryTextColor
         )
 
+        // NEW FEATURE: Dynamic Weather-Adaptive Skincare Routine Tracker
+        Spacer(modifier = Modifier.height(16.dp))
+        DynamicSkincareTrackerWidget(
+            viewModel = viewModel,
+            cardBg = cardBgColor,
+            borderColor = cardBorderColor,
+            primaryText = primaryTextColor,
+            secondaryText = secondaryTextColor,
+            isDark = isDark
+        )
+
         // Module One: The Outfit of the Day (OOTD Card)
         Spacer(modifier = Modifier.height(16.dp))
         OotdCard(
@@ -2037,6 +2048,320 @@ fun StylingAssistantWidget(
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DynamicSkincareTrackerWidget(
+    viewModel: MareViewModel,
+    cardBg: Color,
+    borderColor: Color,
+    primaryText: Color,
+    secondaryText: Color,
+    isDark: Boolean
+) {
+    val todayLog by viewModel.todaySkincareLog.collectAsState()
+    val weatherState by viewModel.weather.collectAsState()
+
+    var activeSubTab by remember { mutableStateOf("AM") }
+
+    val amSteps = listOf(
+        "Cleanse (Lightweight)",
+        "Hydrating Serum",
+        "Barrier Cream",
+        "Broad-Spectrum SPF"
+    )
+    val pmSteps = listOf(
+        "Double-Cleanse Wash",
+        "Active Treatment",
+        "Night Emulsion",
+        "Calming Eye Cream"
+    )
+
+    val completedSteps = remember(todayLog) {
+        val list = mutableListOf<String>()
+        val jsonStr = todayLog?.completedStepsJson ?: "[]"
+        try {
+            val jsonArray = org.json.JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                list.add(jsonArray.getString(i))
+            }
+        } catch (e: Exception) {
+            // ignore
+        }
+        list
+    }
+
+    val totalSteps = amSteps.size + pmSteps.size
+    val completedCount = completedSteps.size
+    val progress = if (totalSteps > 0) completedCount.toFloat() / totalSteps else 0f
+
+    // Calculate simulated streak
+    val streakCount = remember(todayLog) {
+        if (completedCount > 0) 5 else 4
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .hoverScaleAndShadow()
+            .fadeInUpOnMount(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            // Header with luxury accent
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "MARE SKINCARE LAB",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color(0xFFA8D1C2) else Color(0xFF202D29),
+                        letterSpacing = 1.5.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Daily Skincare Tracker",
+                        fontSize = 18.sp,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Light,
+                        color = primaryText
+                    )
+                }
+                
+                // Streak badge
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .background(
+                            if (isDark) Color(0xFF2E3532) else Color(0xFFE8F2EE),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Whatshot,
+                        contentDescription = "Streak",
+                        tint = Color(0xFFE07A5F),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "$streakCount Day Streak",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color(0xFFA8D1C2) else Color(0xFF1E352F)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Weather-Adaptive Advice
+            val isDry = weatherState.humidity < 60
+            val isHot = weatherState.temperature > 24
+            
+            val warningBg = if (isDark) Color(0xFF25282B) else Color(0xFFF7F9FB)
+            val warningBorder = if (isDry || isHot) {
+                if (isDark) Color(0xFF6E5642) else Color(0xFFF2D1B3)
+            } else {
+                borderColor.copy(alpha = 0.5f)
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(BorderStroke(1.dp, warningBorder), RoundedCornerShape(12.dp))
+                    .background(warningBg, RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Advice",
+                    tint = if (isDry || isHot) Color(0xFFD97706) else if (isDark) Color(0xFFA8D1C2) else Color(0xFF2D4E41),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = when {
+                        isDry -> "Low atmospheric humidity (${weatherState.humidity}%) detected. Prioritize hydrating serums and your Moisture Barrier Cream today."
+                        isHot -> "High UV exposure risk (${weatherState.temperature}°C). Please double-check Broad-Spectrum SPF application and reapply."
+                        else -> "Current atmospheric levels are skin-neutral. Maintain your standard hydration levels and lightweight drapes."
+                    },
+                    fontSize = 12.sp,
+                    color = secondaryText,
+                    lineHeight = 16.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Progress Indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Overall Completion ($completedCount/$totalSteps steps)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = secondaryText
+                )
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDark) Color(0xFFA8D1C2) else Color(0xFF202D29)
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = if (isDark) Color(0xFFA8D1C2) else Color(0xFF2C4E41),
+                trackColor = if (isDark) Color(0xFF333D39) else Color(0xFFE2ECE9)
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // AM/PM Tabs
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { activeSubTab = "AM" },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (activeSubTab == "AM") {
+                            if (isDark) Color(0xFF2E3D36) else Color(0xFFE2ECE9)
+                        } else {
+                            if (isDark) Color(0xFF24272B) else Color(0xFFF3F5F7)
+                        },
+                        contentColor = if (activeSubTab == "AM") {
+                            if (isDark) Color(0xFFA8D1C2) else Color(0xFF1E352F)
+                        } else {
+                            secondaryText
+                        }
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.LightMode, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("AM Routine", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                Button(
+                    onClick = { activeSubTab = "PM" },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (activeSubTab == "PM") {
+                            if (isDark) Color(0xFF2E3D36) else Color(0xFFE2ECE9)
+                        } else {
+                            if (isDark) Color(0xFF24272B) else Color(0xFFF3F5F7)
+                        },
+                        contentColor = if (activeSubTab == "PM") {
+                            if (isDark) Color(0xFFA8D1C2) else Color(0xFF1E352F)
+                        } else {
+                            secondaryText
+                        }
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.DarkMode, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("PM Routine", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Step List
+            val activeSteps = if (activeSubTab == "AM") amSteps else pmSteps
+            
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                activeSteps.forEach { step ->
+                    val isChecked = completedSteps.contains(step)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.toggleSkincareStep(step, activeSubTab == "AM") }
+                            .border(
+                                width = 1.dp,
+                                color = if (isChecked) {
+                                    if (isDark) Color(0xFF2E4E3F) else Color(0xFFCBE3DA)
+                                } else {
+                                    borderColor.copy(alpha = 0.3f)
+                                },
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .background(
+                                if (isChecked) {
+                                    if (isDark) Color(0xFF1D2623) else Color(0xFFF4FAF7)
+                                } else {
+                                    cardBg
+                                },
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isChecked) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = if (isChecked) "Checked" else "Unchecked",
+                                tint = if (isChecked) {
+                                    if (isDark) Color(0xFFA8D1C2) else Color(0xFF2C4E41)
+                                } else {
+                                    secondaryText.copy(alpha = 0.6f)
+                                },
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = step,
+                                fontSize = 13.sp,
+                                fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isChecked) primaryText else secondaryText
+                            )
+                        }
+                        
+                        // Small step details label
+                        Text(
+                            text = when (step) {
+                                "Cleanse (Lightweight)" -> "Gentle pH"
+                                "Hydrating Serum" -> "Niacinamide/HA"
+                                "Barrier Cream" -> "Ceramides"
+                                "Broad-Spectrum SPF" -> "SPF 50+"
+                                "Double-Cleanse Wash" -> "Oil + Water"
+                                "Active Treatment" -> "Retinol/AHA"
+                                "Night Emulsion" -> "Rich Recovery"
+                                "Calming Eye Cream" -> "Peptides"
+                                else -> ""
+                            },
+                            fontSize = 11.sp,
+                            color = secondaryText.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Light
+                        )
                     }
                 }
             }

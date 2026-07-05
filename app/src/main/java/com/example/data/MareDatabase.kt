@@ -143,6 +143,49 @@ interface ClosetItemDao {
     suspend fun deleteItem(item: ClosetItemEntity)
 }
 
+@Entity(tableName = "saved_outfits")
+data class SavedOutfitEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val title: String,
+    val itemIdsJson: String, // JSON array of closet item IDs
+    val itemNames: String, // comma separated item names
+    val compatibilityScore: Int,
+    val stylingVerdict: String,
+    val savedAt: Long = System.currentTimeMillis()
+)
+
+@Dao
+interface SavedOutfitDao {
+    @Query("SELECT * FROM saved_outfits ORDER BY savedAt DESC")
+    fun getAllSavedOutfits(): Flow<List<SavedOutfitEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveOutfit(outfit: SavedOutfitEntity)
+
+    @Delete
+    suspend fun deleteOutfit(outfit: SavedOutfitEntity)
+}
+
+@Entity(tableName = "skincare_logs")
+data class SkincareLogEntity(
+    @PrimaryKey val date: String, // format: YYYY-MM-DD
+    val amCompleted: Boolean,
+    val pmCompleted: Boolean,
+    val completedStepsJson: String // e.g. "[\"Cleanse\", \"Serum\"]"
+)
+
+@Dao
+interface SkincareLogDao {
+    @Query("SELECT * FROM skincare_logs ORDER BY date DESC")
+    fun getAllLogs(): Flow<List<SkincareLogEntity>>
+
+    @Query("SELECT * FROM skincare_logs WHERE date = :date LIMIT 1")
+    suspend fun getLogForDate(date: String): SkincareLogEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdateLog(log: SkincareLogEntity)
+}
+
 // --- Database ---
 
 @Database(
@@ -151,9 +194,11 @@ interface ClosetItemDao {
         SavedArticleEntity::class,
         SavedProductEntity::class,
         ChatMessageEntity::class,
-        ClosetItemEntity::class
+        ClosetItemEntity::class,
+        SavedOutfitEntity::class,
+        SkincareLogEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class MareDatabase : RoomDatabase() {
@@ -162,6 +207,8 @@ abstract class MareDatabase : RoomDatabase() {
     abstract fun savedProductDao(): SavedProductDao
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun closetItemDao(): ClosetItemDao
+    abstract fun savedOutfitDao(): SavedOutfitDao
+    abstract fun skincareLogDao(): SkincareLogDao
 
     companion object {
         @Volatile
